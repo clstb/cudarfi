@@ -1,0 +1,199 @@
+\documentclass[a0paper,landscape]{baposter}
+
+\usepackage{url}			       % For \url
+\usepackage{epstopdf}	       % Included EPS files automatically converted to PDF to include with pdflatex
+\usepackage{multicol}        % Multi Columns
+
+\usepackage{amsmath,amssymb} % math
+\usepackage{natbib}
+\usepackage{graphicx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utility functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Save space in lists. Use this after the opening of the list %%%%%%%%%%%%%%%%
+\renewcommand{\vec}[1]{\bm{#1}}
+\newcommand{\vnabla}{\vec{\nabla}}
+
+\renewcommand{\d}[1]{\text{d} #1}
+\newcommand{\dxx}{\,\text{d}\vec{x}}
+\newcommand{\dx}{\,\text{d}x}
+
+\newcommand{\diff}[2]{\frac{\text{d}#1}{\text{d}#2}}
+\newcommand{\idiff}[2]{\text{d}#1 / \text{d}#2}
+\newcommand{\pdiff}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdifff}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\ipdiff}[2]{\partial #1 / \partial #2}
+\newcommand{\vdiff}[2]{\frac{\delta #1}{\delta #2}}
+\newcommand{\ivdiff}[2]{\delta #1 / \delta #2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Document Start %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\typeout{Poster rendering started}
+
+%%% COLOR DEFINITIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{uniblue}{RGB}{0,66,137}
+\definecolor{tured}{RGB}{197,14,31}
+
+%%% NICE RULER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\hhrule}{\bigskip{\color{tured}\rule{\textwidth}{1pt}}\\}
+%%% ITEMIZE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\labelitemi}{\color{tured}\scriptsize$\blacksquare$}
+
+%%% General Poster Settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Eye Catcher, Title, Authors and University Images %%%%%%%%%%%%%%%%%%%%%%
+\begin{poster}{
+  columns=3,
+	grid=false,
+	borderColor=tured,
+	headerColorOne=tured,
+	headerColorTwo=tured,
+	headerFontColor=white,
+  headerheight=10em,
+	boxColorOne=white,
+  boxpadding=1em,
+	headershape=rectangle,
+	headerfont=\Large\textsf,
+	textborder=none,
+	background=shadetb,
+  bgColorOne=white,
+  bgColorTwo=white,
+	headerborder=open,
+  boxshade=plain,
+  eyecatcher=false
+}
+%%% Eye Catcher %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{
+}
+%%% Title %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{\Huge CUDARFI: CUDA-Accelerated ARFI Beamforming}
+%%% Authors %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{
+  \vspace{1em}
+  Claas Störtenbecker\\
+	{\Large claas.stoertenbecker@gmail.com}\\
+  {\Large \url{https://github.com/clstb/cudarfi}}
+}
+%%% Logo %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{\begin{minipage}{20.0em}
+    \includegraphics[height=9em]{tu_berlin_logo}
+  \end{minipage}
+}
+
+%%% Background %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\headerbox{Background}{name=abstract,column=0,row=0}{
+  Acoustic Radiation Force Impulse (ARFI) imaging uses focused ultrasound to induce localized tissue displacement. By tracking the resulting shear waves, ARFI provides quantitative information about tissue stiffness, enabling non-invasive assessment of conditions like liver fibrosis or breast lesions.
+}
+
+%%% Box 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Experimental Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\headerbox{Experimental Setup}{name=setup,column=1,row=0}{
+  The setup utilizes a CIRS phantom imaged with a Verasonics Vantage system.
+  
+  \begin{center}
+    \begin{minipage}{0.48\linewidth}
+      \centering
+      \includegraphics[width=\linewidth]{schema-1.png}\\
+      \footnotesize{Schema 1: Geometry}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+      \centering
+      \includegraphics[width=\linewidth]{schema-3.png}\\
+      \footnotesize{Schema 3: Memory Access}
+    \end{minipage}
+  \end{center}
+  
+  \vspace{1em}
+  \begin{center}
+    \begin{minipage}{0.48\linewidth}
+      \centering
+      \includegraphics[width=\linewidth]{schema-2.png}\\
+      \footnotesize{Schema 2: Parallelism}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+      \centering
+      \includegraphics[width=\linewidth]{cirs-phantom.png}\\
+      \footnotesize{CIRS Phantom}
+    \end{minipage}
+  \end{center}
+}
+
+%%% Algorithm & Optimization %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\headerbox{Algorithm \& Optimization}{name=algo,column=0,below=abstract,above=bottom}{
+  \raggedright
+  \textbf{1. Hilbert Transform (FFTW)}\\
+  RF signals are real-valued; converting them to complex analytic signals enables envelope detection and phase tracking. The analytic signal is: $s_a(t) = s(t) + jH\{s(t)\}$, computed via FFT by zeroing negative frequencies and applying IFFT.
+  
+  \vspace{0.5em}
+  \textbf{2. Delay-and-Sum Beamforming (CUDA)}\\
+  For each output pixel at position $(x, z)$, signals from all $N$ transducer elements are coherently summed after applying appropriate time delays:
+  \begin{equation*}
+    I(x, z) = \sum_{i=1}^{N} S_i\left(\frac{\sqrt{(x - x_i)^2 + (z - z_i)^2}}{c} + t_0\right)
+  \end{equation*}
+  Here, $(x_i, z_i)$ is the position of element $i$, $c$ is sound speed, and $t_0$ is the initial time offset. Linear interpolation provides sub-sample precision.
+  
+  \vspace{0.5em}
+  \textbf{3. Kasai Autocorrelation (Python)}\\
+  Tissue displacement $d$ is estimated from the phase shift between consecutive beamformed frames $I_n$ and $I_{n-1}$:
+  \begin{equation*}
+    d = \frac{c}{4\pi f_0} \angle(I_n \cdot I_{n-1}^*)
+  \end{equation*}
+  where $f_0$ is the center frequency. A spatial averaging filter smooths the noisy phase estimates.
+  
+  \vspace{0.5em}
+  \textbf{CUDA Optimizations:}
+  \begin{itemize}
+    \item \textbf{Texture Cache}: \texttt{\_\_ldg()} for read-only cache.
+    \item \textbf{Constant Memory}: Probe geometry broadcast.
+    \item \mbox{\textbf{Fast~Math}}: \mbox{(\texttt{\_\_fsqrt\_rn}, \texttt{\_\_fmaf\_rn})}.
+    \item \textbf{Launch Bounds}: \mbox{\texttt{\_\_launch\_bounds\_\_(256)}}.
+    \item \textbf{Precomputed Inverses}: Avoid division by precalculating $1/c$.
+  \end{itemize}
+}
+
+%%% Results %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\headerbox{Results}{name=results,column=2,row=0}{
+  \begin{center}
+    \includegraphics[width=0.8\linewidth]{b_mode.png}\\
+    \small{Reconstructed B-Mode Image}
+  \end{center}
+  
+  \vspace{0.5em}
+  \textbf{Wave Propagation}\\
+  \includegraphics[width=0.23\linewidth]{wave_1.png}
+  \includegraphics[width=0.23\linewidth]{wave_2.png}
+  \includegraphics[width=0.23\linewidth]{wave_3.png}
+  \includegraphics[width=0.23\linewidth]{wave_4.png}
+  
+  \vspace{1em}
+  \textbf{Performance Benchmarks} (RTX 3060 vs Ryzen 7800X3D)\\
+  \begin{center}
+  \begin{tabular}{l l r}
+    \textbf{Implementation} & \textbf{Time} & \textbf{Speedup} \\
+    \hline
+    CPU (OpenMP) & 1.4375 s & 1.00$\times$ \\
+    CUDA Naive & 0.8025 s & 1.79$\times$ \\
+    \textbf{CUDA Optimized} & \textbf{0.6500 s} & \textbf{2.21$\times$} \\
+  \end{tabular}
+  \end{center}
+}
+
+%%% References %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\headerbox{References}{name=refs,column=2,below=results,above=bottom}{
+\begingroup
+\tiny
+\renewcommand{\section}[2]{}%
+\nocite{*}
+\bibliography{references}
+\bibliographystyle{plain}
+\endgroup
+}
+
+\end{poster}
+\end{document}

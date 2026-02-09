@@ -1,3 +1,13 @@
 build
 ARFI_dataset.uff
 beamformed_output.h5
+
+# LaTeX build outputs
+poster/*.aux
+poster/*.log
+poster/*.fls
+poster/*.fdb_latexmk
+poster/*.bbl
+poster/*.blg
+poster/*.synctex.gz
+poster/*.out
