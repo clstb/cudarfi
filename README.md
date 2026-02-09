@@ -1,4 +1,4 @@
-# CUDA ARFI Beamformer
+# CUDARFI
 
 Acoustic Radiation Force Impulse imaging is a non-invasive ultrasound technique for measuring tissue deformation.
 This is a high-performance delay-and-sum beamformer implementation using CUDA for GPU acceleration.
